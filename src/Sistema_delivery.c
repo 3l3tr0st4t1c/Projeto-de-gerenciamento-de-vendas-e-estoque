@@ -3,8 +3,12 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
-#include <windows.h>
 #include <time.h>
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
 
 /* =============================================================================
    [ VITOR DELIVERY V7.0 - ULTIMATE CORE ]
@@ -418,7 +422,11 @@ void enviar_ack(const char *json_eventos) {
    ============================================================================= */
 
 void desenhar_cabecalho(const char *titulo) {
+#ifdef _WIN32
     system("cls");
+#else
+    system("clear");
+#endif
     printf(FUNDO_AZUL COR_BRANCO "================================================================================\n");
     printf(" || VITOR DELIVERY || SGA v%s || %s \n", VERSAO, titulo);
     printf("================================================================================\n" COR_RESET);
@@ -489,8 +497,12 @@ void exibir_painel_bancos_ssd() {
     
     if (!arq) { 
         printf(COR_AMARELO "\n [!] O Banco de Dados SSD esta vazio ou nao foi criado.\n" COR_RESET); 
-        system("pause"); 
-        return; 
+#ifdef _WIN32
+        system("pause");
+#else
+        getchar();
+#endif
+        return;
     }
 
     char linha[2048];
@@ -581,7 +593,11 @@ void exibir_painel_bancos_ssd() {
     fclose(arq);
     printf(COR_CINZA " ------------------------------------------------------------------------------\n" COR_RESET);
     printf(" Pressione qualquer tecla para voltar ao centro de comando...\n");
+#ifdef _WIN32
     system("pause > nul");
+#else
+    getchar();
+#endif
 }
 
 /* =============================================================================
@@ -622,13 +638,18 @@ void modo_vigilante_live() {
         free(poll_chunk.memory);
         
         desenhar_monitor_operacional_live();
+#ifdef _WIN32
         Sleep(INTERVALO_POLLING * 1000);
+#else
+        usleep(INTERVALO_POLLING * 1000000);
+#endif
     }
 }
 
 int main(void) {
-    // Configura o console para UTF-8 (Caracteres Especiais)
-    SetConsoleOutputCP(65001); 
+#ifdef _WIN32
+    SetConsoleOutputCP(65001);
+#endif
     curl_global_init(CURL_GLOBAL_ALL);
 
     int opcao = 0;
@@ -651,11 +672,19 @@ int main(void) {
             case 2: exibir_painel_bancos_ssd(); break;
             case 3: 
                 printf("\nDesligando Motores... Salve a firma do seu pai! Ate logo, Vitor.\n"); 
+#ifdef _WIN32
                 Sleep(2000);
+#else
+                usleep(2000000);
+#endif
                 break;
-            default: 
-                printf("\n" COR_VERMELHO "Comando Invalido." COR_RESET "\n"); 
+            default:
+                printf("\n" COR_VERMELHO "Comando Invalido." COR_RESET "\n");
+#ifdef _WIN32
                 Sleep(1000);
+#else
+                usleep(1000000);
+#endif
         }
     }
 

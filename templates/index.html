@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VITOR DELIVERY — SGA v7.0.0-ULTIMATE</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <header class="header">
+    <div class="header-inner">
+      <span class="header-title">|| VITOR DELIVERY || SGA v7.0.0-ULTIMATE ||</span>
+      <span class="header-sub" id="header-sub">PAINEL TÁTICO AO VIVO (RAM)</span>
+      <span class="header-clock" id="header-clock"></span>
+    </div>
+  </header>
+
+  <!-- NAVEGAÇÃO -->
+  <nav class="nav">
+    <button class="nav-btn active" id="btn-live" onclick="mudarAba('live')">[1] MOTOR LIVE</button>
+    <button class="nav-btn" id="btn-ssd"  onclick="mudarAba('ssd')">[2] BIG DATA SSD</button>
+    <button class="nav-btn" id="btn-graf" onclick="mudarAba('graf')">[3] GRÁFICOS</button>
+    <div class="nav-spacer"></div>
+    <div class="refresh-info" id="refresh-info">
+      <span class="refresh-dot"></span>
+      <span id="refresh-countdown">próx. atualização em 7s</span>
+    </div>
+  </nav>
+
+  <!-- ===================== ABA LIVE ===================== -->
+  <section id="aba-live" class="aba">
+
+    <div class="ultima-atualizacao">
+      Última atualização: <span id="ultima-atualizacao">—</span>
+    </div>
+
+    <!-- MÉTRICAS -->
+    <div class="metricas">
+      <div class="metrica-label">[ METRICAS EM TEMPO REAL ]</div>
+      <div class="metricas-row">
+        <div class="metrica-item">
+          <span class="metrica-key">Total na Tela</span>
+          <span class="metrica-val" id="m-total">00</span>
+        </div>
+        <div class="metrica-sep">|</div>
+        <div class="metrica-item">
+          <span class="metrica-key">Gross Revenue</span>
+          <span class="metrica-val" id="m-revenue">R$ 0,00</span>
+        </div>
+        <div class="metrica-sep">|</div>
+        <div class="metrica-item">
+          <span class="metrica-key">Avg. Ticket</span>
+          <span class="metrica-val" id="m-ticket">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTAÇÃO DE PRODUÇÃO -->
+    <div class="estacao">
+      <div class="estacao-titulo amarelo">
+        [&gt;] ESTAÇÃO DE PRODUÇÃO (Cozinha &amp; Preparo) —
+        <span id="qtd-cozinha">0</span> Ativos
+      </div>
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>DISPLAY</th>
+            <th>STATUS</th>
+            <th>TIMER</th>
+            <th>CLIENTE</th>
+            <th>RESUMO ITENS</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-cozinha">
+          <tr><td colspan="5" class="vazio">Nenhum pedido em produção</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ESTAÇÃO DE LOGÍSTICA -->
+    <div class="estacao">
+      <div class="estacao-titulo magenta">
+        [&gt;] ESTAÇÃO DE LOGÍSTICA (Despacho &amp; Rotas) —
+        <span id="qtd-logistica">0</span> Ativos
+      </div>
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>DISPLAY</th>
+            <th>STATUS</th>
+            <th>TIMER</th>
+            <th>BAIRRO</th>
+            <th>VALOR</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-logistica">
+          <tr><td colspan="5" class="vazio">Nenhum pedido em rota</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ===================== ABA SSD ===================== -->
+  <section id="aba-ssd" class="aba hidden">
+
+    <div class="analytics-titulo">[ ANALYTICS MACRO ] Resumo do Fechamento</div>
+    <div class="analytics-cards">
+      <div class="card">
+        <div class="card-label">Volume de Ordens</div>
+        <div class="card-val" id="a-total">—</div>
+      </div>
+      <div class="card verde">
+        <div class="card-label">Concluidos</div>
+        <div class="card-val" id="a-concluidos">—</div>
+      </div>
+      <div class="card vermelho">
+        <div class="card-label">Cancelados</div>
+        <div class="card-val" id="a-cancelados">—</div>
+      </div>
+      <div class="card verde">
+        <div class="card-label">Receita Bruta</div>
+        <div class="card-val" id="a-faturamento">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Ticket Medio</div>
+        <div class="card-val" id="a-ticket">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Taxas de Entrega</div>
+        <div class="card-val" id="a-taxas">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Itens Produzidos</div>
+        <div class="card-val" id="a-itens">—</div>
+      </div>
+    </div>
+
+    <div class="estacao">
+      <div class="estacao-titulo ciano">[ DUMP DE DADOS — ÚLTIMOS REGISTROS ]</div>
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>STATUS</th>
+            <th>DATA/HORA</th>
+            <th>CLIENTE</th>
+            <th>VALOR</th>
+            <th>BAIRRO</th>
+            <th>ITENS</th>
+            <th>PAGAMENTO</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-ssd">
+          <tr><td colspan="8" class="vazio">Carregando histórico...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ===================== ABA GRÁFICOS ===================== -->
+  <section id="aba-graf" class="aba hidden">
+
+    <div class="graficos-titulo">[ PAINEL ANALÍTICO VISUAL ]</div>
+
+    <div class="graficos-grid">
+
+      <!-- Donut: Status -->
+      <div class="grafico-card">
+        <div class="grafico-label">STATUS DOS PEDIDOS</div>
+        <div class="grafico-wrap grafico-wrap--pequeno">
+          <canvas id="chart-status"></canvas>
+        </div>
+        <div class="grafico-legenda" id="legenda-status"></div>
+      </div>
+
+      <!-- Donut: Pagamento -->
+      <div class="grafico-card">
+        <div class="grafico-label">MÉTODOS DE PAGAMENTO</div>
+        <div class="grafico-wrap grafico-wrap--pequeno">
+          <canvas id="chart-pagamento"></canvas>
+        </div>
+        <div class="grafico-legenda" id="legenda-pagamento"></div>
+      </div>
+
+      <!-- Barras: Top Bairros -->
+      <div class="grafico-card grafico-card--largo">
+        <div class="grafico-label">TOP BAIRROS POR RECEITA (R$)</div>
+        <div class="grafico-wrap">
+          <canvas id="chart-bairros"></canvas>
+        </div>
+      </div>
+
+      <!-- Linha: Receita acumulada -->
+      <div class="grafico-card grafico-card--largo">
+        <div class="grafico-label">RECEITA ACUMULADA POR PEDIDO</div>
+        <div class="grafico-wrap">
+          <canvas id="chart-receita"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="graf-vazio" class="hidden">
+      <p class="vazio" style="padding:40px">Nenhum dado no histórico SSD ainda. Finalize pedidos para ver os gráficos.</p>
+    </div>
+
+  </section>
+
+  <!-- LOG BAR -->
+  <footer class="log-bar">
+    <span class="log-label">TERMINAL LOG:</span>
+    <span id="log-msg">V7 Inicializado. Aguardando eventos...</span>
+    <span class="log-pulse" id="log-pulse"></span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
