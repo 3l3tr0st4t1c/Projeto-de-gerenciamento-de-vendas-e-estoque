@@ -3,8 +3,12 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
-#include <windows.h>
 #include <time.h>
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
 
 /* =============================================================================
    [ VITOR DELIVERY V7.0 - ULTIMATE CORE ]
@@ -116,6 +120,7 @@ void enviar_ack(const char *json_eventos);
 void desenhar_cabecalho(const char *titulo);
 void desenhar_monitor_operacional_live();
 void exibir_painel_bancos_ssd();
+void exportar_estado_json();
 void modo_vigilante_live();
 
 /* =============================================================================
@@ -418,7 +423,11 @@ void enviar_ack(const char *json_eventos) {
    ============================================================================= */
 
 void desenhar_cabecalho(const char *titulo) {
+#ifdef _WIN32
     system("cls");
+#else
+    system("clear");
+#endif
     printf(FUNDO_AZUL COR_BRANCO "================================================================================\n");
     printf(" || VITOR DELIVERY || SGA v%s || %s \n", VERSAO, titulo);
     printf("================================================================================\n" COR_RESET);
@@ -488,9 +497,13 @@ void exibir_painel_bancos_ssd() {
     FILE *arq = fopen("historico_v7.txt", "r");
     
     if (!arq) { 
-        printf(COR_AMARELO "\n [!] O Banco de Dados SSD esta vazio ou nao foi criado.\n" COR_RESET); 
-        system("pause"); 
-        return; 
+        printf(COR_AMARELO "\n [!] O Banco de Dados SSD esta vazio ou nao foi criado.\n" COR_RESET);
+#ifdef _WIN32
+        system("pause");
+#else
+        getchar();
+#endif
+        return;
     }
 
     char linha[2048];
@@ -581,7 +594,95 @@ void exibir_painel_bancos_ssd() {
     fclose(arq);
     printf(COR_CINZA " ------------------------------------------------------------------------------\n" COR_RESET);
     printf(" Pressione qualquer tecla para voltar ao centro de comando...\n");
+#ifdef _WIN32
     system("pause > nul");
+#else
+    getchar();
+#endif
+}
+
+/* =============================================================================
+   EXPORTADOR DE ESTADO PARA O DASHBOARD WEB
+   Grava o estado atual da RAM em estado_atual.json a cada ciclo de polling.
+   O servidor web (servidor.py) serve esse arquivo para o browser.
+   ============================================================================= */
+
+void exportar_estado_json() {
+    time_t agora = time(NULL);
+    double ticketMedio = (g_listaRAM.qtdCozinha + g_listaRAM.qtdEntrega > 0) ?
+                         g_listaRAM.faturamentoLive / (g_listaRAM.qtdCozinha + g_listaRAM.qtdEntrega) : 0.0;
+
+    cJSON *root = cJSON_CreateObject();
+
+    // Métricas
+    cJSON *metricas = cJSON_CreateObject();
+    cJSON_AddNumberToObject(metricas, "totalNaTela",  g_listaRAM.qtdCozinha + g_listaRAM.qtdEntrega);
+    cJSON_AddNumberToObject(metricas, "grossRevenue", g_listaRAM.faturamentoLive);
+    cJSON_AddNumberToObject(metricas, "avgTicket",    ticketMedio);
+    cJSON_AddItemToObject(root, "metricas", metricas);
+
+    // Contadores das estações
+    cJSON_AddNumberToObject(root, "qtdCozinha",   g_listaRAM.qtdCozinha);
+    cJSON_AddNumberToObject(root, "qtdLogistica", g_listaRAM.qtdEntrega);
+
+    // Pedidos em cozinha
+    cJSON *cozinha = cJSON_CreateArray();
+    PedidoAtivo *p = g_listaRAM.inicio;
+    while (p) {
+        if (strcmp(p->status, "EM ROTA") != 0) {
+            int segs = (int)difftime(agora, p->momentoEntrada);
+            char timer[16];
+            sprintf(timer, "%02dm %02ds", segs / 60, segs % 60);
+
+            cJSON *obj = cJSON_CreateObject();
+            cJSON_AddStringToObject(obj, "displayId",   p->displayId);
+            cJSON_AddStringToObject(obj, "status",      p->status);
+            cJSON_AddStringToObject(obj, "timerStr",    timer);
+            cJSON_AddBoolToObject  (obj, "atrasado",    segs > LIMITE_ATRASO_COZINHA);
+            cJSON_AddStringToObject(obj, "cliente",     p->cliente.nome);
+            cJSON_AddStringToObject(obj, "resumoItens", p->dna.resumoItens);
+            cJSON_AddNumberToObject(obj, "valor",       p->financeiro.valorBruto);
+            cJSON_AddItemToArray(cozinha, obj);
+        }
+        p = p->prox;
+    }
+    cJSON_AddItemToObject(root, "cozinha", cozinha);
+
+    // Pedidos em logística
+    cJSON *logistica = cJSON_CreateArray();
+    p = g_listaRAM.inicio;
+    while (p) {
+        if (strcmp(p->status, "EM ROTA") == 0) {
+            int segs = (int)difftime(agora, p->momentoDespacho);
+            char timer[16];
+            sprintf(timer, "%02dm %02ds", segs / 60, segs % 60);
+
+            cJSON *obj = cJSON_CreateObject();
+            cJSON_AddStringToObject(obj, "displayId", p->displayId);
+            cJSON_AddStringToObject(obj, "status",    p->status);
+            cJSON_AddStringToObject(obj, "timerStr",  timer);
+            cJSON_AddBoolToObject  (obj, "atrasado",  segs > LIMITE_ATRASO_ENTREGA);
+            cJSON_AddStringToObject(obj, "bairro",    p->entrega.bairro);
+            cJSON_AddNumberToObject(obj, "valor",     p->financeiro.valorBruto);
+            cJSON_AddItemToArray(logistica, obj);
+        }
+        p = p->prox;
+    }
+    cJSON_AddItemToObject(root, "logistica", logistica);
+
+    // Log
+    cJSON_AddStringToObject(root, "log", g_ultimo_log);
+
+    // Grava no arquivo
+    char *json_str = cJSON_PrintUnformatted(root);
+    FILE *f = fopen("estado_atual.json", "w");
+    if (f) {
+        fprintf(f, "%s", json_str);
+        fclose(f);
+    }
+
+    cJSON_Delete(root);
+    free(json_str);
 }
 
 /* =============================================================================
@@ -622,13 +723,19 @@ void modo_vigilante_live() {
         free(poll_chunk.memory);
         
         desenhar_monitor_operacional_live();
+        exportar_estado_json();
+#ifdef _WIN32
         Sleep(INTERVALO_POLLING * 1000);
+#else
+        usleep(INTERVALO_POLLING * 1000000);
+#endif
     }
 }
 
 int main(void) {
-    // Configura o console para UTF-8 (Caracteres Especiais)
-    SetConsoleOutputCP(65001); 
+#ifdef _WIN32
+    SetConsoleOutputCP(65001);
+#endif
     curl_global_init(CURL_GLOBAL_ALL);
 
     int opcao = 0;
@@ -650,12 +757,20 @@ int main(void) {
             case 1: modo_vigilante_live(); break;
             case 2: exibir_painel_bancos_ssd(); break;
             case 3: 
-                printf("\nDesligando Motores... Salve a firma do seu pai! Ate logo, Vitor.\n"); 
+                printf("\nDesligando Motores... Salve a firma do seu pai! Ate logo, Vitor.\n");
+#ifdef _WIN32
                 Sleep(2000);
+#else
+                usleep(2000000);
+#endif
                 break;
-            default: 
-                printf("\n" COR_VERMELHO "Comando Invalido." COR_RESET "\n"); 
+            default:
+                printf("\n" COR_VERMELHO "Comando Invalido." COR_RESET "\n");
+#ifdef _WIN32
                 Sleep(1000);
+#else
+                usleep(1000000);
+#endif
         }
     }
 
