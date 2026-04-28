@@ -1,0 +1,16 @@
+# Binário compilado do C
+vitor_delivery
+vitor_delivery.exe
+
+# Estado gerado em runtime pelo programa C
+estado_atual.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# macOS
+.DS_Store
