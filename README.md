@@ -29,7 +29,7 @@ historico_v7.txt — Banco de dados em disco. Gerado pelo programa C ao finaliza
 
 ## Alterações no programa C (compatibilidade cross-platform)
 
-O arquivo `src/Sistema_delivery.c` foi atualizado para rodar em **Windows e macOS**:
+"O arquivo src/Sistema_delivery.c foi atualizado para rodar em Windows, macOS e Linux"
 
 - `#include <windows.h>` substituído por guarda `#ifdef _WIN32` com `#include <unistd.h>` no macOS
 - `Sleep()` substituído por `usleep()` no macOS
